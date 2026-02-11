@@ -28,8 +28,8 @@
         .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
 
         .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .ticket-name-box { display: flex; align-items: center; gap: 8px; font-size: 16px; }
-        .ticket-name-box input { width: 18px; height: 18px; margin: 0; }
+        .ticket-name-box { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: bold; color: #333; }
+        .ticket-name-box input { width: 20px; height: 20px; margin: 0; cursor: pointer; }
 
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
         .cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 50%; font-size: 18px; font-weight: bold; }
@@ -120,32 +120,30 @@
 </div></div>
 
 <script>
-    /** 專業防護腳本 **/
+    /** 專業防護 **/
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-    };
-
-    /** 邏輯腳本 **/
+    
     let tickets = [], drawnNumbers = [], customPattern = [12], customTarget = 1, editingData = Array(25).fill(null);
     let activeIndex = 0, isVoiceOn = false, isSoundOn = true, editIndex = null, recognition, announcedBingo = new Set(), isInitializing = true;
 
-    // 預載入音效物件 (修正為中獎.mp3 以對應檔案)
+    // 音效物件（檔名已改為你上傳的「中獎.mp3」）
     const bingoSfx = new Audio('中獎.mp3');
 
+    /** 核心修正點：處理賓果觸發動作 **/
     function playBingoVoice() { 
-        // 核心修正：只要有人賓果，先立刻斷開語音監聽，無論喇叭有沒有開
+        // 1. 無論音效開關，只要賓果就立刻強制切斷語音監聽
         if (isVoiceOn && recognition) {
-            isVoiceOn = false; 
-            recognition.stop(); 
+            isVoiceOn = false; // 設為 false 確保 recognition.onend 不會自動重啟
+            recognition.stop();
             document.getElementById('voiceBtn').classList.remove('active');
         }
 
-        // 如果靜音模式就此打住，不播放音效
+        // 2. 檢查音效是否開啟，若關閉則不執行後續播放
         if (!isSoundOn) return; 
 
+        // 3. 播放中獎音效
         bingoSfx.currentTime = 0;
-        bingoSfx.play().catch(e => console.log("音效播放被阻擋"));
+        bingoSfx.play().catch(e => console.log("音效播放被阻擋，需使用者先點擊頁面互動。"));
     }
 
     function updateSpeakerUI() { document.getElementById('s-on').style.display = isSoundOn ? 'block' : 'none'; document.getElementById('s-off').style.display = isSoundOn ? 'none' : 'block'; }
@@ -226,10 +224,10 @@
     function toggleTicket(i) { tickets[i].enabled = !tickets[i].enabled; renderAll(); saveData(); }
     function toggleAllTickets(v) { tickets.forEach(t => t.enabled = v); renderAll(); saveData(); }
     function jumpTo(i) { document.getElementById('tk-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    function saveData() { localStorage.setItem('bingo_pro_v3', JSON.stringify({t:tickets, d:drawnNumbers, m:document.getElementById('gameMode').value, p:customPattern, c:customTarget, s:isSoundOn})); }
+    function saveData() { localStorage.setItem('bingo_final_fixed', JSON.stringify({t:tickets, d:drawnNumbers, m:document.getElementById('gameMode').value, p:customPattern, c:customTarget, s:isSoundOn})); }
     function loadData() { 
         isInitializing = true;
-        const saved = localStorage.getItem('bingo_pro_v3'); 
+        const saved = localStorage.getItem('bingo_final_fixed'); 
         if (saved) { 
             const d = JSON.parse(saved); 
             tickets = d.t || []; drawnNumbers = d.d || []; customPattern = d.p || [12]; customTarget = d.c || 1; 
@@ -251,7 +249,6 @@
             let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) t += e.results[i][0].transcript;
             if (t) { const ms = t.match(/\d+/g); if (ms) ms.forEach(m => { const n = parseInt(m); if (n >= 1 && n <= 75 && !drawnNumbers.includes(n)) { drawnNumbers.push(n); updateHistory(); renderAll(); saveData(); } }); }
         };
-        // 只有當 isVoiceOn 為 true 時才自動重啟，賓果時我們會手動把 isVoiceOn 設為 false
         recognition.onend = () => { if (isVoiceOn) try { recognition.start(); } catch(e) {} };
     }
 </script>
