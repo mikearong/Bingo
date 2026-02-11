@@ -27,7 +27,6 @@
         .ticket.enabled { opacity: 1; border-color: #ccc; }
         .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
 
-        /* 調整獎券頭部對齊與字體 */
         .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .ticket-name-box { display: flex; align-items: center; gap: 8px; font-size: 16px; }
         .ticket-name-box input { width: 18px; height: 18px; margin: 0; }
@@ -123,22 +122,26 @@
 <script>
     /** 專業防護腳本 **/
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-    };
-    setInterval(function() { (function() { (function a() { try { (function b(i) { if (('' + (i / i)).length !== 1 || i % 20 === 0) { (function() {}).constructor('debugger')(); } else { debugger; } b(++i); })(0); } catch (e) { setTimeout(a, 5000); } })() })(); }, 1000);
-
+    
     /** 邏輯腳本 **/
     let tickets = [], drawnNumbers = [], customPattern = [12], customTarget = 1, editingData = Array(25).fill(null);
     let activeIndex = 0, isVoiceOn = false, isSoundOn = true, editIndex = null, recognition, announcedBingo = new Set(), isInitializing = true;
 
-    // 預載入音效物件
+    // 修改：將音效路徑改為你提供的檔案
     const bingoSfx = new Audio('bingo.mp3');
 
     function playBingoVoice() { 
         if (!isSoundOn) return; 
-        bingoSfx.currentTime = 0; // 重置播放時間，避免快速連續中獎時沒聲音
-        bingoSfx.play().catch(e => console.log("音效播放被阻擋，需使用者先點擊頁面互動。"));
+
+        // 修改：當賓果發生時，如果語音監聽開著，立刻關閉它
+        if (isVoiceOn && recognition) {
+            isVoiceOn = false; // 先設為 false，防止 recognition.onend 自動重啟
+            recognition.stop();
+            document.getElementById('voiceBtn').classList.remove('active'); // 燈熄滅
+        }
+
+        bingoSfx.currentTime = 0; 
+        bingoSfx.play().catch(e => console.log("音效播放被阻擋"));
     }
 
     function updateSpeakerUI() { document.getElementById('s-on').style.display = isSoundOn ? 'block' : 'none'; document.getElementById('s-off').style.display = isSoundOn ? 'none' : 'block'; }
@@ -194,7 +197,6 @@
             if (s.isBingo) barHtml += `<span class="notif-item" style="background:var(--primary)" onclick="jumpTo(${x})">🎉 ${t.name} BINGO!</span>`;
             else if (s.isReady) barHtml += `<span class="notif-item" style="background:var(--gray)" onclick="jumpTo(${x})">🔔 ${t.name} 聽牌</span>`;
             
-            // 更新渲染結構：使用更清楚的 header 與 flex 對齊
             return `<div id="tk-${x}" class="ticket ${t.enabled?'enabled':''} ${s.isBingo?'bingo':''}">
                 <div class="ticket-header">
                     <div class="ticket-name-box">
