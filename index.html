@@ -127,21 +127,21 @@
     let tickets = [], drawnNumbers = [], customPattern = [12], customTarget = 1, editingData = Array(25).fill(null);
     let activeIndex = 0, isVoiceOn = false, isSoundOn = true, editIndex = null, recognition, announcedBingo = new Set(), isInitializing = true;
 
-    // 修改：將音效路徑改為你提供的檔案
+    // 預載音效
     const bingoSfx = new Audio('bingo.mp3');
 
     function playBingoVoice() { 
         if (!isSoundOn) return; 
 
-        // 修改：當賓果發生時，如果語音監聽開著，立刻關閉它
+        // 核心修改：如果語音正在開啟，賓果時強制關閉
         if (isVoiceOn && recognition) {
-            isVoiceOn = false; // 先設為 false，防止 recognition.onend 自動重啟
+            isVoiceOn = false; // 標記為關閉，避免 onend 自動重啟
             recognition.stop();
             document.getElementById('voiceBtn').classList.remove('active'); // 燈熄滅
         }
 
         bingoSfx.currentTime = 0; 
-        bingoSfx.play().catch(e => console.log("音效播放被阻擋"));
+        bingoSfx.play().catch(e => console.log("播放被阻擋"));
     }
 
     function updateSpeakerUI() { document.getElementById('s-on').style.display = isSoundOn ? 'block' : 'none'; document.getElementById('s-off').style.display = isSoundOn ? 'none' : 'block'; }
