@@ -8,7 +8,6 @@
         :root { --primary: #d32f2f; --secondary: #ff9800; --accent: #ffeb3b; --bg: #f4f7f9; --win: #43a047; --voice: #673ab7; --gray: #607d8b; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 5px; padding-bottom: 115px; padding-top: 85px; -webkit-user-select: none; user-select: none; }
         
-        /* 防止輸入框出現小箭頭 */
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
 
@@ -19,33 +18,29 @@
         
         select { flex: 1.5; height: 34px; font-size: 14px; border-radius: 4px; border: 1px solid #ddd; min-width: 80px; }
         .btn-top { height: 34px; font-size: 12px; border: none; background: #eee; border-radius: 4px; padding: 0 8px; white-space: nowrap; }
-        
-        .spk-toggle { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; color: #555; }
-        .spk-toggle svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .spk-toggle { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #555; }
+        .spk-toggle svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; }
 
         .container { max-width: 500px; margin: auto; }
-        .ticket { background: white; border-radius: 8px; padding: 10px; margin-bottom: 12px; border: 1px solid #eee; opacity: 0.5; transition: 0.3s; scroll-margin-top: 95px; }
+        .ticket { background: white; border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid #eee; opacity: 0.5; transition: 0.3s; scroll-margin-top: 95px; }
         .ticket.enabled { opacity: 1; border-color: #ccc; }
         .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
-        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+
+        /* 調整：獎券名稱位置與大小 */
+        .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 2px; }
+        .ticket-header b { font-size: 18px; color: #333; margin-left: 4px; }
         
-        /* 獎券號碼字體加大 */
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
         .cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 50%; font-size: 18px; font-weight: bold; }
         .cell.marked { background: var(--accent); border-color: #fbc02d; }
-        .cell.active { border: 2px solid #2196f3 !important; background: #e3f2fd; }
-        .cell.empty-alert { border: 2px solid #ff5252 !important; background: #ffebee !important; }
         .cell.locked { opacity: 0.5; background: #f0f0f0; border: 1px dashed #ccc; }
         
         .floating-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; padding: 10px; box-sizing: border-box; z-index: 9000; }
-        
-        /* 修復：左下角輸入框樣式 */
         .row-1 { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        #numInput { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; flex-shrink: 0; box-sizing: border-box; }
-        
+        #numInput { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; flex-shrink: 0; }
         .history-box { flex: 1; height: 40px; display: flex; align-items: center; gap: 5px; overflow-x: auto; background: #f5f5f5; border-radius: 8px; padding: 0 8px; }
         .drawn-btn { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px 10px; font-size: 13px; font-weight: bold; flex-shrink: 0; }
         
-        /* 下排按鍵字體加大 */
         .row-2 { display: flex; gap: 8px; }
         .icon-btn { flex: 1; height: 48px; border: none; border-radius: 8px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
         .btn-voice { background: var(--voice); }
@@ -53,15 +48,14 @@
         
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; overflow-y: auto; }
         .modal-content { background:white; width:95%; margin:20px auto; padding:18px; border-radius:15px; box-sizing: border-box; }
-        .picker-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; max-height:220px; overflow-y:auto; background:#f0f0f0; padding:10px; border-radius:10px; }
-        .num-btn { padding:12px 0; border:1px solid #ddd; background:white; border-radius:6px; font-size:14px; font-weight:bold; }
-        .num-btn.disabled { background: #d0d0d0; color: #999; }
         
         @keyframes highlight { 0%, 100% { box-shadow: 0 0 0px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body onload="loadData()">
+
+<audio id="bingoSound" src="bingo.mp3" preload="auto"></audio>
 
 <div class="top-container">
     <div class="top-settings">
@@ -100,7 +94,7 @@
     <h3 style="margin:0 0 12px 0; text-align:center;">獎券編輯器</h3>
     <input type="text" id="ownerName" placeholder="持有人姓名" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:8px; box-sizing: border-box; font-size:16px;">
     <div class="grid" id="editGrid" style="margin-bottom:15px; padding:8px; background:#f5f5f5; border-radius:10px;"></div>
-    <div id="pickerGrid" class="picker-grid"></div>
+    <div id="pickerGrid" style="display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; max-height:220px; overflow-y:auto; background:#f0f0f0; padding:10px; border-radius:10px;"></div>
     <div id="errorMsg" style="color:#d32f2f; font-size:14px; font-weight:bold; margin:12px 0; text-align:center; min-height:20px;"></div>
     <div style="display:flex; gap:10px;">
         <button class="icon-btn" style="background:var(--win); flex:2;" onclick="saveTicket()">💾 儲存</button>
@@ -123,20 +117,26 @@
 </div></div>
 
 <script>
-    /** 專業防護腳本 **/
+    /** 專業防護 **/
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-    };
+    document.onkeydown = function(e) { if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false; };
     setInterval(function() { (function() { (function a() { try { (function b(i) { if (('' + (i / i)).length !== 1 || i % 20 === 0) { (function() {}).constructor('debugger')(); } else { debugger; } b(++i); })(0); } catch (e) { setTimeout(a, 5000); } })() })(); }, 1000);
 
-    /** 邏輯腳本 **/
+    /** 核心邏輯 **/
     let tickets = [], drawnNumbers = [], customPattern = [12], customTarget = 1, editingData = Array(25).fill(null);
     let activeIndex = 0, isVoiceOn = false, isSoundOn = true, editIndex = null, recognition, announcedBingo = new Set(), isInitializing = true;
 
-    function playBingoVoice() { if (!isSoundOn || !window.speechSynthesis) return; const m = new SpeechSynthesisUtterance("Bingo!!"); m.lang = 'en-US'; m.rate = 1.2; m.pitch = 1.6; window.speechSynthesis.speak(m); }
+    // 修改：改為播放 MP3
+    function playBingoSound() { 
+        if (!isSoundOn) return; 
+        const audio = document.getElementById('bingoSound');
+        audio.currentTime = 0; 
+        audio.play().catch(e => console.log("音效播放失敗", e));
+    }
+
     function updateSpeakerUI() { document.getElementById('s-on').style.display = isSoundOn ? 'block' : 'none'; document.getElementById('s-off').style.display = isSoundOn ? 'none' : 'block'; }
     function toggleSound() { isSoundOn = !isSoundOn; updateSpeakerUI(); saveData(); }
+
     function openAddModal() { editIndex = null; editingData = Array(25).fill(null); editingData[12] = "FREE"; activeIndex = 0; document.getElementById('ownerName').value = ""; document.getElementById('errorMsg').innerText = ""; document.getElementById('deleteBtn').style.display = 'none'; renderEditGrid(); document.getElementById('addModal').style.display = 'block'; }
     function renderEditGrid(alertIndices = []) {
         document.getElementById('editGrid').innerHTML = editingData.map((v, i) => `<div class="cell ${(i===activeIndex)?'active':''} ${alertIndices.includes(i)?'empty-alert':''} ${(i===12)?'locked':''}" onclick="${(i===12)?'':'activeIndex='+i+';renderEditGrid()'}">${(i===12)?'★':(v||'')}</div>`).join('');
@@ -179,22 +179,26 @@
         else if(m === 'custom') c(customPattern, customTarget);
         return { isBingo: ib, isReady: ib ? false : ir };
     }
+
     function renderAll() {
         const list = document.getElementById('ticketList'), bar = document.getElementById('notifBar'); let barHtml = '';
         list.innerHTML = tickets.map((t, x) => {
             let mk = [12]; t.data.forEach((v, i) => { if(drawnNumbers.includes(v)) mk.push(i); });
             let s = t.enabled ? checkWin(mk) : { isBingo: false, isReady: false };
-            if (s.isBingo && !announcedBingo.has(x)) { announcedBingo.add(x); playBingoVoice(); }
+            if (s.isBingo && !announcedBingo.has(x)) { announcedBingo.add(x); playBingoSound(); }
             if (s.isBingo) barHtml += `<span class="notif-item" style="background:var(--primary)" onclick="jumpTo(${x})">🎉 ${t.name} BINGO!</span>`;
             else if (s.isReady) barHtml += `<span class="notif-item" style="background:var(--gray)" onclick="jumpTo(${x})">🔔 ${t.name} 聽牌</span>`;
+            
+            // 修改：優化後的 Header 排版
             return `<div id="tk-${x}" class="ticket ${t.enabled?'enabled':''} ${s.isBingo?'bingo':''}">
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                <div class="ticket-header">
                     <div><input type="checkbox" ${t.enabled?'checked':''} onchange="toggleTicket(${x})"> <b>${t.name}</b></div>
-                    <div style="color:#2196f3; cursor:pointer;" onclick="editTicket(${x})">編輯/刪除</div>
+                    <div style="color:#2196f3; font-size:13px; cursor:pointer;" onclick="editTicket(${x})">編輯/刪除</div>
                 </div><div class="grid">${t.data.map((n, i) => `<div class="cell ${mk.includes(i)?'marked':''}">${n==='FREE'?'★':n}</div>`).join('')}</div></div>`;
         }).join('');
         bar.style.display = barHtml ? 'block' : 'none'; bar.innerHTML = barHtml;
     }
+
     function changeMode(v) { 
         document.getElementById('customConfigBtn').style.display = (v === 'custom') ? 'inline-block' : 'none'; 
         if (v === 'custom' && !isInitializing) openCustomModal(); 
