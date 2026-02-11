@@ -6,13 +6,7 @@
     <title>揚程尾牙賓果王</title>
     <style>
         :root { --primary: #d32f2f; --secondary: #ff9800; --accent: #ffeb3b; --bg: #f4f7f9; --win: #43a047; --voice: #673ab7; --gray: #607d8b; }
-        
-        /* 基礎防護：禁止選取文字 */
-        body { 
-            font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 5px; padding-bottom: 115px; padding-top: 85px; 
-            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; 
-        }
-        
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 5px; padding-bottom: 115px; padding-top: 85px; -webkit-user-select: none; user-select: none; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
         .top-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 8000; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -31,184 +25,213 @@
         .cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 50%; font-size: 18px; font-weight: bold; }
         .cell.marked { background: var(--accent); border-color: #fbc02d; }
         .cell.active { border: 2px solid #2196f3 !important; background: #e3f2fd; }
+        .cell.empty-alert { border: 2px solid #ff5252 !important; background: #ffebee !important; }
         .cell.locked { opacity: 0.5; background: #f0f0f0; border: 1px dashed #ccc; }
         .floating-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; padding: 10px; box-sizing: border-box; z-index: 9000; }
         .row-1 { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        #number-input { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; }
+        #ni { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; flex-shrink: 0; }
         .history-box { flex: 1; height: 40px; display: flex; align-items: center; gap: 5px; overflow-x: auto; background: #f5f5f5; border-radius: 8px; padding: 0 8px; }
         .drawn-btn { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px 10px; font-size: 13px; font-weight: bold; flex-shrink: 0; }
         .row-2 { display: flex; gap: 8px; }
         .icon-btn { flex: 1; height: 48px; border: none; border-radius: 8px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
+        .btn-voice { background: var(--voice); }
+        .btn-voice.active { background: #f44336; animation: blink 1.5s infinite; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; overflow-y: auto; }
+        .modal-content { background:white; width:95%; margin:20px auto; padding:18px; border-radius:15px; box-sizing: border-box; }
+        .picker-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; max-height:220px; overflow-y:auto; background:#f0f0f0; padding:10px; border-radius:10px; }
+        .num-btn { padding:12px 0; border:1px solid #ddd; background:white; border-radius:6px; font-size:14px; font-weight:bold; }
+        .num-btn.disabled { background: #d0d0d0; color: #999; }
         @keyframes highlight { 0%, 100% { box-shadow: 0 0 0px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
 </head>
 <body onload="loadData()">
 
 <div class="top-container">
     <div class="top-settings">
-        <select id="game-mode" onchange="changeGameMode(this.value)">
+        <select id="gameMode" onchange="changeMode(this.value)">
             <option value="any_line">任一線</option>
             <option value="cross">十字線</option>
             <option value="border">外框</option>
             <option value="custom">自訂玩法</option>
         </select>
-        <button id="config-btn" class="btn-top" onclick="openCustomModal()" style="display:none; background:var(--accent); font-weight:bold;">⚙️設定</button>
+        <button id="customConfigBtn" class="btn-top" onclick="openCustomModal()" style="display:none; background:var(--accent); font-weight:bold;">⚙️設定</button>
         <button class="btn-top" onclick="toggleAllTickets(true)">✅全選</button>
         <button class="btn-top" onclick="toggleAllTickets(false)">❌清空</button>
-        <div id="sound-btn" class="spk-toggle" onclick="toggleSound()">
+        <div id="speakerBtn" class="spk-toggle" onclick="toggleSound()">
             <svg id="s-on" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
             <svg id="s-off" viewBox="0 0 24 24" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </div>
     </div>
-    <div id="notification-bar" class="notification-bar"></div>
+    <div id="notifBar" class="notification-bar"></div>
 </div>
 
-<div class="container" id="ticket-list"></div>
+<div class="container" id="ticketList"></div>
 
 <div class="floating-footer">
     <div class="row-1">
-        <input type="number" id="number-input" placeholder="號碼" oninput="handleManualInput(this)" pattern="\d*">
-        <div id="drawn-history" class="history-box"></div>
+        <input type="number" id="numInput" placeholder="號碼" oninput="manualInput(this)" pattern="\d*">
+        <div id="drawHistory" class="history-box"></div>
     </div>
     <div class="row-2">
-        <button id="voice-btn" class="icon-btn" style="background:var(--voice)" onclick="toggleVoice()">🎙️ 語音監聽</button>
-        <button class="icon-btn" style="background:#555" onclick="resetDrawnNumbers()">🔄 清除開獎</button>
+        <button id="voiceBtn" class="icon-btn btn-voice" onclick="toggleVoice()">🎙️ 語音監聽</button>
+        <button class="icon-btn" style="background:#555" onclick="resetGame()">🔄 清除開獎</button>
         <button class="icon-btn" style="background:var(--win); flex:1.5" onclick="openAddModal()">➕ 新增獎券</button>
     </div>
 </div>
 
+<div id="addModal" class="modal"><div class="modal-content">
+    <h3 style="margin:0 0 12px 0; text-align:center;">獎券編輯器</h3>
+    <input type="text" id="ownerName" placeholder="持有人姓名" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:8px; box-sizing: border-box; font-size:16px;">
+    <div class="grid" id="editGrid" style="margin-bottom:15px; padding:8px; background:#f5f5f5; border-radius:10px;"></div>
+    <div id="pickerGrid" class="picker-grid"></div>
+    <div id="errorMsg" style="color:#d32f2f; font-size:14px; font-weight:bold; margin:12px 0; text-align:center; min-height:20px;"></div>
+    <div style="display:flex; gap:10px;">
+        <button class="icon-btn" style="background:var(--win); flex:2;" onclick="saveTicket()">💾 儲存</button>
+        <button id="deleteBtn" class="icon-btn" style="background:#f44336; flex:1; display:none;" onclick="deleteCurrentTicket()">🗑️ 刪除</button>
+        <button class="icon-btn" style="background:#757575; flex:1;" onclick="closeAddModal()">取消</button>
+    </div>
+</div></div>
+
+<div id="customModal" class="modal"><div class="modal-content">
+    <h3 style="margin:0 0 10px 0; text-align:center;">自訂玩法設定</h3>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button class="btn-top" style="flex:1;" onclick="customSelectAll(true)">✅ 全選</button>
+        <button class="btn-top" style="flex:1;" onclick="customSelectAll(false)">❌ 清空</button>
+    </div>
+    <div class="grid" id="customGrid" style="gap:6px; margin-bottom:20px;"></div>
+    <div style="background:#fff9c4; padding:15px; border-radius:10px; border:1px solid #fbc02d; text-align:center; font-weight:bold;">
+        需對中 <input type="number" id="customCount" value="1" min="1" oninput="validateCustomCount()" style="width:50px; height:30px; text-align:center; border:1px solid #fbc02d; border-radius:4px;"> 個號碼即賓果
+    </div>
+    <button class="icon-btn" style="background:var(--win); width:100%; margin-top:20px; font-size:16px;" onclick="applyCustomMode()">💾 套用規則</button>
+</div></div>
+
 <script>
-    // 全域變數清晰化
-    let tickets = [], drawnNumbers = [], customPattern = [12], customTargetCount = 1;
-    let isSoundEnabled = true, isInitializing = true, alreadyAlertedBingo = new Set();
-    
-    // --- 強效防護腳本 ---
-    document.addEventListener('contextmenu', e => e.preventDefault()); // 禁止右鍵
+    /** 防護腳本：禁止右鍵、F12、視窗除錯 **/
+    document.addEventListener('contextmenu', e => e.preventDefault());
     document.onkeydown = function(e) {
-        if (e.keyCode == 123) return false; // F12
-        if (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) return false; // Ctrl+Shift+I/J
-        if (e.ctrlKey && e.keyCode == 85) return false; // Ctrl+U (視圖原始碼)
+        if (e.keyCode == 123 || 
+           (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) || 
+           (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+            return false;
+        }
     };
+    // 偵測開發者工具：如果打開，這段代碼會引發無窮 debugger 導致頁面暫停
+    setInterval(function() { (function() { (function a() { try { (function b(i) { if (('' + (i / i)).length !== 1 || i % 20 === 0) { (function() {}).constructor('debugger')(); } else { debugger; } b(++i); })(0); } catch (e) { setTimeout(a, 5000); } })() })(); }, 1000);
 
-    function playBingoSound() {
-        if (!isSoundEnabled || !window.speechSynthesis) return;
-        const msg = new SpeechSynthesisUtterance("Bingo!!");
-        msg.lang = 'en-US';
-        window.speechSynthesis.speak(msg);
+    /** 核心變數 (恢復語意化) **/
+    let tickets = [], drawnNumbers = [], customPattern = [12], customTarget = 1, editingData = Array(25).fill(null);
+    let activeIndex = 0, isVoiceOn = false, isSoundOn = true, editIndex = null, recognition, announcedBingo = new Set(), isInitializing = true;
+
+    function playBingoVoice() { if (!isSoundOn || !window.speechSynthesis) return; const m = new SpeechSynthesisUtterance("Bingo!!"); m.lang = 'en-US'; m.rate = 1.2; m.pitch = 1.6; window.speechSynthesis.speak(m); }
+    function updateSpeakerUI() { document.getElementById('s-on').style.display = isSoundOn ? 'block' : 'none'; document.getElementById('s-off').style.display = isSoundOn ? 'none' : 'block'; }
+    function toggleSound() { isSoundOn = !isSoundOn; updateSpeakerUI(); saveData(); }
+
+    function openAddModal() { editIndex = null; editingData = Array(25).fill(null); editingData[12] = "FREE"; activeIndex = 0; document.getElementById('ownerName').value = ""; document.getElementById('errorMsg').innerText = ""; document.getElementById('deleteBtn').style.display = 'none'; renderEditGrid(); document.getElementById('addModal').style.display = 'block'; }
+    function renderEditGrid(alertIndices = []) {
+        document.getElementById('editGrid').innerHTML = editingData.map((v, i) => `<div class="cell ${(i===activeIndex)?'active':''} ${alertIndices.includes(i)?'empty-alert':''} ${(i===12)?'locked':''}" onclick="${(i===12)?'':'activeIndex='+i+';renderEditGrid()'}">${(i===12)?'★':(v||'')}</div>`).join('');
+        document.getElementById('pickerGrid').innerHTML = Array.from({length:75}, (_,i)=>i+1).map(n => `<button class="num-btn ${editingData.includes(n)?'disabled':''}" onclick="${editingData.includes(n)?'':'pickNumber('+n+')'}">${n}</button>`).join('');
+    }
+    function pickNumber(n) { editingData[activeIndex] = n; document.getElementById('errorMsg').innerText = ""; let next = activeIndex + 1; if (next === 12) next = 13; if (next < 25) activeIndex = next; renderEditGrid(); }
+    function saveTicket() {
+        const e = document.getElementById('errorMsg'), emptyOnes = editingData.map((v, i) => (v === null && i !== 12) ? i : null).filter(v => v !== null);
+        if (emptyOnes.length > 0) { e.innerText = `⚠️ 剩餘 ${emptyOnes.length} 格未填！`; renderEditGrid(emptyOnes); return; }
+        const name = document.getElementById('ownerName').value.trim() || `獎券 ${tickets.length + 1}`;
+        if (editIndex !== null) tickets[editIndex] = { name: name, data: [...editingData], enabled: true };
+        else tickets.push({ name: name, data: [...editingData], enabled: true });
+        closeAddModal(); renderAll(); saveData();
+    }
+    function deleteCurrentTicket() { if (editIndex !== null && confirm("確定刪除此獎券？")) { tickets.splice(editIndex, 1); closeAddModal(); renderAll(); saveData(); } }
+    function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+    function editTicket(i) { editIndex = i; editingData = [...tickets[i].data]; document.getElementById('ownerName').value = tickets[i].name; activeIndex = 0; document.getElementById('deleteBtn').style.display = 'block'; document.getElementById('errorMsg').innerText = ""; renderEditGrid(); document.getElementById('addModal').style.display = 'block'; }
+
+    function openCustomModal() {
+        document.getElementById('customGrid').innerHTML = Array.from({length:25}, (_, i) => `<div class="cell custom-cell ${(i===12)?'locked':''} ${(customPattern.includes(i) && i!==12)?'marked':''}" data-index="${i}" onclick="${(i===12)?'':'this.classList.toggle(\'marked\'); updateCustomHint();'}">${(i===12)?'★':''}</div>`).join('');
+        document.getElementById('customCount').value = customTarget; document.getElementById('customModal').style.display = 'block';
+    }
+    function customSelectAll(v) { document.querySelectorAll('.custom-cell:not(.locked)').forEach(el => v ? el.classList.add('marked') : el.classList.remove('marked')); updateCustomHint(); }
+    function updateCustomHint() { const s = document.querySelectorAll('.custom-cell.marked').length, i = document.getElementById('customCount'); if (s > 0) { if (i.value > s) i.value = s; if (i.value < 1) i.value = 1; } else i.value = 0; }
+    function applyCustomMode() {
+        let p = [12], c = 0; document.querySelectorAll('.custom-cell.marked').forEach(el => { p.push(parseInt(el.dataset.index)); c++; });
+        customPattern = p; customTarget = c > 0 ? Math.max(1, parseInt(document.getElementById('customCount').value)) : 0;
+        document.getElementById('customModal').style.display = 'none'; announcedBingo.clear(); renderAll(); saveData();
     }
 
-    function toggleSound() {
-        isSoundEnabled = !isSoundEnabled;
-        updateSoundUI();
-        saveToLocal();
-    }
-
-    function updateSoundUI() {
-        document.getElementById('s-on').style.display = isSoundEnabled ? 'block' : 'none';
-        document.getElementById('s-off').style.display = isSoundEnabled ? 'none' : 'block';
+    function checkWin(markedIndices) {
+        const mode = document.getElementById('gameMode').value;
+        const lines = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
+        let isBingo = false, isReady = false;
+        const judge = (pattern, target) => {
+            const realP = pattern.filter(i => i !== 12); if (realP.length === 0 || (mode === 'custom' && target === 0)) return;
+            const matchCount = realP.filter(i => markedIndices.includes(i)).length;
+            const winReq = (target === 0 || target > realP.length) ? realP.length : target;
+            if (matchCount >= winReq) isBingo = true; else if (matchCount === winReq - 1) isReady = true;
+        };
+        if(mode === 'any_line') lines.forEach(l => judge(l, 0));
+        else if(mode === 'cross') judge([2,7,12,17,22,10,11,13,14], 0);
+        else if(mode === 'border') judge([0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24], 0);
+        else if(mode === 'custom') judge(customPattern, customTarget);
+        return { isBingo, isReady: isBingo ? false : isReady };
     }
 
     function renderAll() {
-        const listDiv = document.getElementById('ticket-list');
-        const notifBar = document.getElementById('notification-bar');
-        let notifHTML = '';
-
-        listDiv.innerHTML = tickets.map((ticket, index) => {
-            let markedIndices = [12]; // FREE 格
-            ticket.data.forEach((val, i) => { if(drawnNumbers.includes(val)) markedIndices.push(i); });
-            
-            let status = ticket.enabled ? checkBingo(markedIndices) : { isBingo: false, isReady: false };
-            
-            if (status.isBingo && !alreadyAlertedBingo.has(index)) {
-                alreadyAlertedBingo.add(index);
-                playBingoSound();
-            }
-
-            if (status.isBingo) notifHTML += `<span class="notif-item" style="background:var(--primary)" onclick="jumpToTicket(${index})">🎉 ${ticket.name} BINGO!</span>`;
-            else if (status.isReady) notifHTML += `<span class="notif-item" style="background:var(--gray)" onclick="jumpToTicket(${index})">🔔 ${ticket.name} 聽牌</span>`;
-
-            return `
-                <div id="tk-${index}" class="ticket ${ticket.enabled?'enabled':''} ${status.isBingo?'bingo':''}">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
-                        <div><input type="checkbox" ${ticket.enabled?'checked':''} onchange="toggleTicketEnabled(${index})"> <b>${ticket.name}</b></div>
-                        <div style="color:#2196f3; cursor:pointer;" onclick="editTicket(${index})">編輯/刪除</div>
-                    </div>
-                    <div class="grid">${ticket.data.map((num, i) => `<div class="cell ${markedIndices.includes(i)?'marked':''}">${num==='FREE'?'★':num}</div>`).join('')}</div>
-                </div>`;
+        const list = document.getElementById('ticketList'), bar = document.getElementById('notifBar'); let barHtml = '';
+        list.innerHTML = tickets.map((t, x) => {
+            let marked = [12]; t.data.forEach((v, i) => { if(drawnNumbers.includes(v)) marked.push(i); });
+            let status = t.enabled ? checkWin(marked) : { isBingo: false, isReady: false };
+            if (status.isBingo && !announcedBingo.has(x)) { announcedBingo.add(x); playBingoVoice(); }
+            if (status.isBingo) barHtml += `<span class="notif-item" style="background:var(--primary)" onclick="jumpTo(${x})">🎉 ${t.name} BINGO!</span>`;
+            else if (status.isReady) barHtml += `<span class="notif-item" style="background:var(--gray)" onclick="jumpTo(${x})">🔔 ${t.name} 聽牌</span>`;
+            return `<div id="tk-${x}" class="ticket ${t.enabled?'enabled':''} ${status.isBingo?'bingo':''}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                    <div><input type="checkbox" ${t.enabled?'checked':''} onchange="toggleTicket(${x})"> <b>${t.name}</b></div>
+                    <div style="color:#2196f3; cursor:pointer;" onclick="editTicket(${x})">編輯/刪除</div>
+                </div><div class="grid">${t.data.map((n, i) => `<div class="cell ${marked.includes(i)?'marked':''}">${n==='FREE'?'★':n}</div>`).join('')}</div></div>`;
         }).join('');
-
-        notifBar.style.display = notifHTML ? 'block' : 'none';
-        notifBar.innerHTML = notifHTML;
+        bar.style.display = barHtml ? 'block' : 'none'; bar.innerHTML = barHtml;
     }
 
-    function handleManualInput(input) {
-        const num = parseInt(input.value);
-        if (input.value.length >= 2) {
-            if (num >= 1 && num <= 75 && !drawnNumbers.includes(num)) {
-                drawnNumbers.push(num);
-                updateHistoryUI();
-                renderAll();
-                saveToLocal();
-            }
-            input.value = '';
-        }
+    function changeMode(v) { 
+        document.getElementById('customConfigBtn').style.display = (v === 'custom') ? 'inline-block' : 'none'; 
+        if (v === 'custom' && !isInitializing) openCustomModal(); 
+        else { announcedBingo.clear(); renderAll(); saveData(); } 
     }
-
-    function updateHistoryUI() {
-        const box = document.getElementById('drawn-history');
-        box.innerHTML = drawnNumbers.map((n, i) => `<button class="drawn-btn" onclick="removeDrawnNumber(${i})">${n}</button>`).join('');
-        box.scrollLeft = box.scrollWidth;
-    }
-
-    function removeDrawnNumber(index) {
-        const num = drawnNumbers[index];
-        if (confirm(`確定刪除號碼 [ ${num} ] 嗎？`)) {
-            drawnNumbers.splice(index, 1);
-            alreadyAlertedBingo.clear();
-            updateHistoryUI();
-            renderAll();
-            saveToLocal();
-        }
-    }
-
-    function saveToLocal() {
-        const data = {
-            tickets: tickets,
-            drawnNumbers: drawnNumbers,
-            mode: document.getElementById('game-mode').value,
-            customPattern: customPattern,
-            customTarget: customTargetCount,
-            isSoundEnabled: isSoundEnabled
-        };
-        localStorage.setItem('bingo_v2_data', JSON.stringify(data));
-    }
-
-    function loadData() {
+    function manualInput(i) { const n = parseInt(i.value); if (i.value.length >= 2) { if (n >= 1 && n <= 75 && !drawnNumbers.includes(n)) { drawnNumbers.push(n); updateHistory(); renderAll(); saveData(); } i.value = ''; } }
+    function updateHistory() { const h = document.getElementById('drawHistory'); h.innerHTML = drawnNumbers.map((n, i) => `<button class="drawn-btn" onclick="removeNumber(${i})">${n}</button>`).join(''); h.scrollLeft = h.scrollWidth; }
+    function removeNumber(i) { if (confirm(`確定刪除號碼 [ ${drawnNumbers[i]} ] 嗎？`)) { drawnNumbers.splice(i, 1); announcedBingo.clear(); updateHistory(); renderAll(); saveData(); } }
+    function resetGame() { if (confirm("重新開局？")) { drawnNumbers = []; announcedBingo.clear(); updateHistory(); renderAll(); saveData(); } }
+    function toggleTicket(i) { tickets[i].enabled = !tickets[i].enabled; renderAll(); saveData(); }
+    function toggleAllTickets(v) { tickets.forEach(t => t.enabled = v); renderAll(); saveData(); }
+    function jumpTo(i) { document.getElementById('tk-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    function saveData() { localStorage.setItem('bingo_pro_v2', JSON.stringify({t:tickets, d:drawnNumbers, m:document.getElementById('gameMode').value, p:customPattern, c:customTarget, s:isSoundOn})); }
+    function loadData() { 
         isInitializing = true;
-        const saved = localStorage.getItem('bingo_v2_data');
-        if (saved) {
-            const d = JSON.parse(saved);
-            tickets = d.tickets || [];
-            drawnNumbers = d.drawnNumbers || [];
-            customPattern = d.customPattern || [12];
-            customTargetCount = d.customTarget || 1;
-            isSoundEnabled = d.isSoundEnabled !== undefined ? d.isSoundEnabled : true;
-            document.getElementById('game-mode').value = d.mode || 'any_line';
-            updateSoundUI();
-            changeGameMode(document.getElementById('game-mode').value);
-            updateHistoryUI();
-            renderAll();
-        }
+        const saved = localStorage.getItem('bingo_pro_v2'); 
+        if (saved) { 
+            const d = JSON.parse(saved); 
+            tickets = d.t || []; drawnNumbers = d.d || []; customPattern = d.p || [12]; customTarget = d.c || 1; 
+            isSoundOn = d.s !== undefined ? d.s : true;
+            document.getElementById('gameMode').value = d.m || 'any_line'; 
+            updateSpeakerUI(); changeMode(document.getElementById('gameMode').value); updateHistory(); renderAll(); 
+        } 
         isInitializing = false;
     }
 
-    function changeGameMode(val) {
-        document.getElementById('config-btn').style.display = (val === 'custom') ? 'inline-block' : 'none';
-        if (val === 'custom' && !isInitializing) openCustomModal();
-        else { alreadyAlertedBingo.clear(); renderAll(); saveToLocal(); }
+    // 語音辨識邏輯
+    function toggleVoice() {
+        if(!recognition) return alert("不支援語音");
+        if (!isVoiceOn) { isVoiceOn = true; try { recognition.start(); document.getElementById('voiceBtn').classList.add('active'); } catch(e) { recognition.stop(); setTimeout(() => { if(isVoiceOn) recognition.start(); }, 400); } } 
+        else { isVoiceOn = false; recognition.stop(); document.getElementById('voiceBtn').classList.remove('active'); }
     }
-    
-    // (其餘細節如 checkBingo 邏輯、Modal 彈窗控制等，由於篇幅較長，結構上已比照上述命名規則還原)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR(); recognition.continuous = true; recognition.lang = 'zh-TW'; recognition.interimResults = false;
+        recognition.onresult = (e) => {
+            let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) t += e.results[i][0].transcript;
+            if (t) { const ms = t.match(/\d+/g); if (ms) ms.forEach(m => { const n = parseInt(m); if (n >= 1 && n <= 75 && !drawnNumbers.includes(n)) { drawnNumbers.push(n); updateHistory(); renderAll(); saveData(); } }); }
+        };
+        recognition.onend = () => { if (isVoiceOn) try { recognition.start(); } catch(e) {} };
+    }
 </script>
 </body>
 </html>
