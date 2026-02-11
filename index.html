@@ -27,7 +27,6 @@
         .ticket.enabled { opacity: 1; border-color: #ccc; }
         .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
 
-        /* 調整獎券頭部對齊與字體 */
         .ticket-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .ticket-name-box { display: flex; align-items: center; gap: 8px; font-size: 16px; }
         .ticket-name-box input { width: 18px; height: 18px; margin: 0; }
@@ -137,7 +136,7 @@
 
     function playBingoVoice() { 
         if (!isSoundOn) return; 
-        bingoSfx.currentTime = 0; // 重置播放時間，避免快速連續中獎時沒聲音
+        bingoSfx.currentTime = 0; 
         bingoSfx.play().catch(e => console.log("音效播放被阻擋，需使用者先點擊頁面互動。"));
     }
 
@@ -190,11 +189,18 @@
         list.innerHTML = tickets.map((t, x) => {
             let mk = [12]; t.data.forEach((v, i) => { if(drawnNumbers.includes(v)) mk.push(i); });
             let s = t.enabled ? checkWin(mk) : { isBingo: false, isReady: false };
-            if (s.isBingo && !announcedBingo.has(x)) { announcedBingo.add(x); playBingoVoice(); }
+            
+            // 核心修改：偵測賓果並關閉語音
+            if (s.isBingo && !announcedBingo.has(x)) { 
+                announcedBingo.add(x); 
+                playBingoVoice(); 
+                // 若有人賓果且當前開啟監聽，則自動切換關閉
+                if (isVoiceOn) toggleVoice(); 
+            }
+            
             if (s.isBingo) barHtml += `<span class="notif-item" style="background:var(--primary)" onclick="jumpTo(${x})">🎉 ${t.name} BINGO!</span>`;
             else if (s.isReady) barHtml += `<span class="notif-item" style="background:var(--gray)" onclick="jumpTo(${x})">🔔 ${t.name} 聽牌</span>`;
             
-            // 更新渲染結構：使用更清楚的 header 與 flex 對齊
             return `<div id="tk-${x}" class="ticket ${t.enabled?'enabled':''} ${s.isBingo?'bingo':''}">
                 <div class="ticket-header">
                     <div class="ticket-name-box">
@@ -233,19 +239,67 @@
         } 
         isInitializing = false;
     }
+
+    /** 強化版語音引擎 **/
     function toggleVoice() {
         if(!recognition) return alert("不支援語音");
-        if (!isVoiceOn) { isVoiceOn = true; try { recognition.start(); document.getElementById('voiceBtn').classList.add('active'); } catch(e) { recognition.stop(); setTimeout(() => { if(isVoiceOn) recognition.start(); }, 400); } } 
-        else { isVoiceOn = false; recognition.stop(); document.getElementById('voiceBtn').classList.remove('active'); }
+        if (!isVoiceOn) { 
+            isVoiceOn = true; 
+            try { 
+                recognition.start(); 
+                document.getElementById('voiceBtn').classList.add('active'); 
+            } catch(e) { 
+                // 處理可能存在的物件未釋放狀態
+                recognition.stop(); 
+                setTimeout(() => { if(isVoiceOn) recognition.start(); }, 400); 
+            } 
+        } 
+        else { 
+            isVoiceOn = false; 
+            recognition.stop(); 
+            document.getElementById('voiceBtn').classList.remove('active'); 
+        }
     }
+
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SR(); recognition.continuous = true; recognition.lang = 'zh-TW'; recognition.interimResults = false;
+        recognition = new SR(); 
+        recognition.continuous = true; 
+        recognition.lang = 'zh-TW'; 
+        recognition.interimResults = false;
+
         recognition.onresult = (e) => {
-            let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) t += e.results[i][0].transcript;
-            if (t) { const ms = t.match(/\d+/g); if (ms) ms.forEach(m => { const n = parseInt(m); if (n >= 1 && n <= 75 && !drawnNumbers.includes(n)) { drawnNumbers.push(n); updateHistory(); renderAll(); saveData(); } }); }
+            let t = ''; 
+            for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) t += e.results[i][0].transcript;
+            if (t) { 
+                const ms = t.match(/\d+/g); 
+                if (ms) ms.forEach(m => { 
+                    const n = parseInt(m); 
+                    if (n >= 1 && n <= 75 && !drawnNumbers.includes(n)) { 
+                        drawnNumbers.push(n); 
+                        updateHistory(); 
+                        renderAll(); 
+                        saveData(); 
+                    } 
+                }); 
+            }
         };
-        recognition.onend = () => { if (isVoiceOn) try { recognition.start(); } catch(e) {} };
+
+        // 修正：當語音因為超時或靜音中斷，且開關仍為「啟動」時自動重啟
+        recognition.onend = () => { 
+            if (isVoiceOn) {
+                try { recognition.start(); } catch(e) {} 
+            }
+        };
+
+        // 修正：處理語音報錯，避免死機
+        recognition.onerror = (e) => {
+            console.log("語音錯誤：", e.error);
+            if (isVoiceOn && e.error !== 'not-allowed') {
+                recognition.stop();
+                setTimeout(() => { if(isVoiceOn) recognition.start(); }, 500);
+            }
+        };
     }
 </script>
 </body>
