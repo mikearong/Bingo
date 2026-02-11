@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>尾牙賓果王 - 質感進化版</title>
+    <style>
+        :root { --primary: #d32f2f; --secondary: #ff9800; --accent: #ffeb3b; --bg: #f4f7f9; --win: #43a047; --voice: #673ab7; --gray: #607d8b; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 5px; padding-bottom: 115px; padding-top: 85px; -webkit-user-select: none; user-select: none; }
+        
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        .top-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 8000; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .top-settings { display: flex; gap: 5px; padding: 8px; height: 50px; align-items: center; box-sizing: border-box; }
+        .notification-bar { background: rgba(34,34,34,0.9); color: white; padding: 5px 0; text-align: center; display: none; max-height: 60px; overflow-y: auto; }
+        .notif-item { display: inline-block; margin: 2px 5px; padding: 4px 10px; border-radius: 15px; font-weight: bold; font-size: 11px; cursor: pointer; }
+        
+        select { flex: 1.5; height: 34px; font-size: 14px; border-radius: 4px; border: 1px solid #ddd; min-width: 80px; }
+        .btn-top { height: 34px; font-size: 12px; border: none; background: #eee; border-radius: 4px; padding: 0 8px; white-space: nowrap; }
+        
+        .spk-toggle { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; color: #555; }
+        .spk-toggle:active { transform: scale(0.9); }
+        .spk-toggle svg { width: 24px; height: 24px; stroke: currentColor; }
+
+        .container { max-width: 500px; margin: auto; }
+        .ticket { background: white; border-radius: 8px; padding: 10px; margin-bottom: 12px; border: 1px solid #eee; opacity: 0.5; transition: 0.3s; scroll-margin-top: 95px; }
+        .ticket.enabled { opacity: 1; border-color: #ccc; }
+        .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
+        .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        
+        /* 1. 獎券號碼字體加大 */
+        .cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 50%; font-size: 18px; font-weight: bold; }
+        .cell.marked { background: var(--accent); border-color: #fbc02d; }
+        .cell.active { border: 2px solid #2196f3 !important; background: #e3f2fd; }
+        .cell.empty-alert { border: 2px solid #ff5252 !important; background: #ffebee !important; }
+        .cell.locked { opacity: 0.5; background: #f0f0f0; border: 1px dashed #ccc; }
+        
+        .floating-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; padding: 10px; box-sizing: border-box; z-index: 9000; }
+        .row-1 { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        #ni { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; flex-shrink: 0; }
+        .history-box { flex: 1; height: 40px; display: flex; align-items: center; gap: 5px; overflow-x: auto; background: #f5f5f5; border-radius: 8px; padding: 0 8px; }
+        .drawn-btn { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px 10px; font-size: 13px; font-weight: bold; flex-shrink: 0; }
+        
+        /* 1. 下排按鍵字體加大 */
+        .row-2 { display: flex; gap: 8px; }
+        .icon-btn { flex: 1; height: 48px; border: none; border-radius: 8px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
+        .btn-voice { background: var(--voice); }
+        .btn-voice.active { background: #f44336; animation: blink 1.5s infinite; }
+        
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; overflow-y: auto; }
+        .modal-content { background:white; width:95%; margin:20px auto; padding:18px; border-radius:15px; box-sizing: border-box; }
+        .picker-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; max-height:220px; overflow-y:auto; background:#f0f0f0; padding:10px; border-radius:10px; }
+        .num-btn { padding:12px 0; border:1px solid #ddd; background:white; border-radius:6px; font-size:14px; font-weight:bold; }
+        .num-btn.disabled { background: #d0d0d0; color: #999; }
+        
+        @keyframes highlight { 0%, 100% { box-shadow: 0 0 0px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    </style>
+</head>
+<body onload="_l()">
+
+<div class="top-container">
+    <div class="top-settings">
+        <select id="gm" onchange="_ms(this.value)">
+            <option value="any_line">任一線</option>
+            <option value="cross">十字線</option>
+            <option value="border">外框</option>
+            <option value="custom">自訂玩法</option>
+        </select>
+        <button id="cb" class="btn-top" onclick="_ocm()" style="display:none; background:var(--accent); font-weight:bold;">⚙️設定</button>
+        <button class="btn-top" onclick="_ta(true)">✅全選</button>
+        <button class="btn-top" onclick="_ta(false)">❌清空</button>
+        <div id="st" class="spk-toggle" onclick="_ts()">
+            <svg id="s-on" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="s-off" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+        </div>
+    </div>
+    <div id="nb" class="notification-bar"></div>
+</div>
+
+<div class="container" id="tl"></div>
+
+<div class="floating-footer">
+    <div class="row-1">
+        <input type="number" id="ni" placeholder="號碼" oninput="_mi(this)" pattern="\d*">
+        <div id="dh" class="history-box"></div>
+    </div>
+    <div class="row-2">
+        <button id="vb" class="icon-btn btn-voice" onclick="_tv()">🎙️ 語音監聽</button>
+        <button class="icon-btn" style="background:#555" onclick="_rd()">🔄 清除開獎</button>
+        <button class="icon-btn" style="background:var(--win); flex:1.5" onclick="_oam()">➕ 新增獎券</button>
+    </div>
+</div>
+
+<div id="am" class="modal"><div class="modal-content">
+    <h3 style="margin:0 0 12px 0; text-align:center;">獎券編輯器</h3>
+    <input type="text" id="nn" placeholder="持有人姓名" style="width:100%; padding:12px; margin-bottom:12px; border:1px solid #ccc; border-radius:8px; box-sizing: border-box; font-size:16px;">
+    <div class="grid" id="eg" style="margin-bottom:15px; padding:8px; background:#f5f5f5; border-radius:10px;"></div>
+    <div id="pg" class="picker-grid"></div>
+    <div id="err" style="color:#d32f2f; font-size:14px; font-weight:bold; margin:12px 0; text-align:center; min-height:20px;"></div>
+    <div style="display:flex; gap:10px;">
+        <button class="icon-btn" style="background:var(--win); flex:2;" onclick="_st()">💾 儲存</button>
+        <button id="db" class="icon-btn" style="background:#f44336; flex:1; display:none;" onclick="_dt()">🗑️ 刪除</button>
+        <button class="icon-btn" style="background:#757575; flex:1;" onclick="_cam()">取消</button>
+    </div>
+</div></div>
+
+<div id="cm" class="modal"><div class="modal-content">
+    <h3 style="margin:0 0 10px 0; text-align:center;">自訂玩法設定</h3>
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button class="btn-top" style="flex:1;" onclick="_csa(true)">✅ 全選</button>
+        <button class="btn-top" style="flex:1;" onclick="_csa(false)">❌ 清空</button>
+    </div>
+    <div class="grid" id="cg" style="gap:6px; margin-bottom:20px;"></div>
+    <div style="background:#fff9c4; padding:15px; border-radius:10px; border:1px solid #fbc02d; text-align:center; font-weight:bold;">
+        需對中 <input type="number" id="cc" value="1" min="1" oninput="_vcc()" style="width:50px; height:30px; text-align:center; border:1px solid #fbc02d; border-radius:4px;"> 個號碼即賓果
+    </div>
+    <button class="icon-btn" style="background:var(--win); width:100%; margin-top:20px; font-size:16px;" onclick="_scm()">💾 套用規則</button>
+</div></div>
+
+<script>
+    let _t = [], _d = [], _p = [12], _tc = 1, _ed = Array(25).fill(null), _ai = 0, _iv = false, _is = true, _ei = null, _rc, _ab = new Set();
+
+    // 2. 已開獎號碼點擊刪除提示優化
+    function _rdn(i) { 
+        const num = _d[i];
+        if (confirm(`確定刪除號碼 [ ${num} ] 嗎？`)) { 
+            _d.splice(i, 1); 
+            _ab.clear(); 
+            _uh(); 
+            _r(); 
+            _sd(); 
+        } 
+    }
+
+    /* 其餘邏輯保持不變 */
+    function _sb() { if (!_is || !window.speechSynthesis) return; const m = new SpeechSynthesisUtterance("Bingo!!"); m.lang = 'en-US'; m.rate = 1.2; m.pitch = 1.6; window.speechSynthesis.speak(m); }
+    function _ts() { _is = !_is; document.getElementById('s-on').style.display = _is ? 'block' : 'none'; document.getElementById('s-off').style.display = _is ? 'none' : 'block'; }
+    function _oam() { _ei = null; _ed = Array(25).fill(null); _ed[12] = "FREE"; _ai = 0; document.getElementById('nn').value = ""; document.getElementById('err').innerText = ""; document.getElementById('db').style.display = 'none'; _ue(); document.getElementById('am').style.display = 'block'; }
+    function _ue(al = []) {
+        document.getElementById('eg').innerHTML = _ed.map((v, i) => `<div class="cell ${(i===_ai)?'active':''} ${al.includes(i)?'empty-alert':''} ${(i===12)?'locked':''}" onclick="${(i===12)?'':'_ai='+i+';_ue()'}">${(i===12)?'★':(v||'')}</div>`).join('');
+        document.getElementById('pg').innerHTML = Array.from({length:75}, (_,i)=>i+1).map(n => `<button class="num-btn ${_ed.includes(n)?'disabled':''}" onclick="${_ed.includes(n)?'':'_pn('+n+')'}">${n}</button>`).join('');
+    }
+    function _pn(n) { _ed[_ai] = n; document.getElementById('err').innerText = ""; let next = _ai + 1; if (next === 12) next = 13; if (next < 25) _ai = next; _ue(); }
+    function _st() {
+        const e = document.getElementById('err'), ems = _ed.map((v, i) => (v === null && i !== 12) ? i : null).filter(v => v !== null);
+        if (ems.length > 0) { e.innerText = `⚠️ 剩餘 ${ems.length} 格未填！`; _ue(ems); return; }
+        const n = document.getElementById('nn').value.trim() || `獎券 ${_t.length + 1}`;
+        if (_ei !== null) _t[_ei] = { name: n, data: [..._ed], enabled: true };
+        else _t.push({ name: n, data: [..._ed], enabled: true });
+        _cam(); _r(); _sd();
+    }
+    function _dt() { if (_ei !== null && confirm("確定刪除此獎券？")) { _t.splice(_ei, 1); _cam(); _r(); _sd(); } }
+    function _cam() { document.getElementById('am').style.display = 'none'; }
+    function editTicket(i) { _ei = i; _ed = [..._t[i].data]; document.getElementById('nn').value = _t[i].name; _ai = 0; document.getElementById('db').style.display = 'block'; document.getElementById('err').innerText = ""; _ue(); document.getElementById('am').style.display = 'block'; }
+    function _ocm() {
+        document.getElementById('cg').innerHTML = Array.from({length:25}, (_, i) => `<div class="cell custom-cell ${(i===12)?'locked':''} ${(_p.includes(i) && i!==12)?'marked':''}" data-index="${i}" onclick="${(i===12)?'':'this.classList.toggle(\'marked\'); _urh();'}">${(i===12)?'★':''}</div>`).join('');
+        document.getElementById('cc').value = _tc; document.getElementById('cm').style.display = 'block';
+    }
+    function _csa(v) { document.querySelectorAll('.custom-cell:not(.locked)').forEach(el => v ? el.classList.add('marked') : el.classList.remove('marked')); _urh(); }
+    function _urh() { const s = document.querySelectorAll('.custom-cell.marked').length, i = document.getElementById('cc'); if (s > 0) { if (i.value > s) i.value = s; if (i.value < 1) i.value = 1; } else i.value = 0; }
+    function _scm() {
+        let p = [12], c = 0; document.querySelectorAll('.custom-cell.marked').forEach(el => { p.push(parseInt(el.dataset.index)); c++; });
+        _p = p; _tc = c > 0 ? Math.max(1, parseInt(document.getElementById('cc').value)) : 0;
+        document.getElementById('cm').style.display = 'none'; _ab.clear(); _r(); _sd();
+    }
+    function _chk(mk) {
+        const m = document.getElementById('gm').value, ls = [[0,1,2,3,4],[5,6,7,8,9],[10,11,12,13,14],[15,16,17,18,19],[20,21,22,23,24],[0,5,10,15,20],[1,6,11,16,21],[2,7,12,17,22],[3,8,13,18,23],[4,9,14,19,24],[0,6,12,18,24],[4,8,12,16,20]];
+        let ib = false, il = false;
+        const c = (p, t) => {
+            const rp = p.filter(i => i !== 12); if (rp.length === 0 || (m === 'custom' && t === 0)) return;
+            const mc = rp.filter(i => mk.includes(i)).length, wc = (t === 0 || t > rp.length) ? rp.length : t;
+            if (mc >= wc) ib = true; else if (mc === wc - 1) il = true;
+        };
+        if(m === 'any_line') ls.forEach(l => c(l, 0));
+        else if(m === 'cross') c([2,7,12,17,22,10,11,13,14], 0);
+        else if(m === 'border') c([0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24], 0);
+        else if(m === 'custom') c(_p, _tc);
+        return { ib, il: ib ? false : il };
+    }
+    function _r() {
+        const l = document.getElementById('tl'), b = document.getElementById('nb'); let bh = '';
+        l.innerHTML = _t.map((t, x) => {
+            let mk = [12]; t.data.forEach((v, i) => { if(_d.includes(v)) mk.push(i); });
+            let s = t.enabled ? _chk(mk) : { ib: false, il: false };
+            if (s.ib && !_ab.has(x)) { _ab.add(x); _sb(); }
+            if (s.ib) bh += `<span class="notif-item" style="background:var(--primary)" onclick="_jp(${x})">🎉 ${t.name} BINGO!</span>`;
+            else if (s.il) bh += `<span class="notif-item" style="background:var(--gray)" onclick="_jp(${x})">🔔 ${t.name} 聽牌</span>`;
+            return `<div id="tk-${x}" class="ticket ${t.enabled?'enabled':''} ${s.ib?'bingo':''}">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px;">
+                    <div><input type="checkbox" ${t.enabled?'checked':''} onchange="_tt(${x})"> <b>${t.name}</b></div>
+                    <div style="color:#2196f3; cursor:pointer;" onclick="editTicket(${x})">編輯/刪除</div>
+                </div><div class="grid">${t.data.map((n, i) => `<div class="cell ${mk.includes(i)?'marked':''}">${n==='FREE'?'★':n}</div>`).join('')}</div></div>`;
+        }).join('');
+        b.style.display = bh ? 'block' : 'none'; b.innerHTML = bh;
+    }
+    function _ms(v) { document.getElementById('cb').style.display = (v === 'custom') ? 'inline-block' : 'none'; if (v === 'custom') _ocm(); else { _ab.clear(); _r(); _sd(); } }
+    function _mi(i) { const n = parseInt(i.value); if (i.value.length >= 2) { if (n >= 1 && n <= 75 && !_d.includes(n)) { _d.push(n); _uh(); _r(); _sd(); } i.value = ''; } }
+    function _uh() { const h = document.getElementById('dh'); h.innerHTML = _d.map((n, i) => `<button class="drawn-btn" onclick="_rdn(${i})">${n}</button>`).join(''); h.scrollLeft = h.scrollWidth; }
+    function _rd() { if (confirm("重新開局？")) { _d = []; _ab.clear(); _uh(); _r(); _sd(); } }
+    function _tt(i) { _t[i].enabled = !_t[i].enabled; _r(); _sd(); }
+    function _ta(v) { _t.forEach(t => t.enabled = v); _r(); _sd(); }
+    function _jp(i) { document.getElementById('tk-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    function _sd() { localStorage.setItem('bingo_p_v1', JSON.stringify({t:_t, d:_d, m:document.getElementById('gm').value, p:_p, c:_tc})); }
+    function _l() { const s = localStorage.getItem('bingo_p_v1'); if (s) { const d = JSON.parse(s); _t = d.t || []; _d = d.d || []; _p = d.p || [12]; _tc = d.c || 1; document.getElementById('gm').value = d.m || 'any_line'; _ms(document.getElementById('gm').value); _uh(); _r(); } }
+    function _tv() {
+        if(!_rc) return alert("不支援語音");
+        if (!_iv) { _iv = true; try { _rc.start(); document.getElementById('vb').classList.add('active'); } catch(e) { _rc.stop(); setTimeout(() => { if(_iv) _rc.start(); }, 400); } } 
+        else { _iv = false; _rc.stop(); document.getElementById('vb').classList.remove('active'); }
+    }
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        _rc = new SR(); _rc.continuous = true; _rc.lang = 'zh-TW'; _rc.interimResults = false;
+        _rc.onresult = (e) => {
+            let t = ''; for (let i = e.resultIndex; i < e.results.length; ++i) if (e.results[i].isFinal) t += e.results[i][0].transcript;
+            if (t) { const ms = t.match(/\d+/g); if (ms) ms.forEach(m => { const n = parseInt(m); if (n >= 1 && n <= 75 && !_d.includes(n)) { _d.push(n); _uh(); _r(); _sd(); } }); }
+        };
+        _rc.onend = () => { if (_iv) try { _rc.start(); } catch(e) {} };
+    }
+</script>
+</body>
+</html>
