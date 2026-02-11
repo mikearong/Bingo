@@ -109,16 +109,14 @@
 
 <script>
     let _t = [], _d = [], _p = [12], _tc = 1, _ed = Array(25).fill(null), _ai = 0, _iv = false, _is = true, _ei = null, _rc, _ab = new Set();
+    let _f = true; // 新增：網頁初始化標記
 
     function _sb() { if (!_is || !window.speechSynthesis) return; const m = new SpeechSynthesisUtterance("Bingo!!"); m.lang = 'en-US'; m.rate = 1.2; m.pitch = 1.6; window.speechSynthesis.speak(m); }
-    
-    // 修正：狀態持久化圖示與存檔
     function _up() {
         document.getElementById('s-on').style.display = _is ? 'block' : 'none';
         document.getElementById('s-off').style.display = _is ? 'none' : 'block';
     }
     function _ts() { _is = !_is; _up(); _sd(); }
-
     function _oam() { _ei = null; _ed = Array(25).fill(null); _ed[12] = "FREE"; _ai = 0; document.getElementById('nn').value = ""; document.getElementById('err').innerText = ""; document.getElementById('db').style.display = 'none'; _ue(); document.getElementById('am').style.display = 'block'; }
     function _ue(al = []) {
         document.getElementById('eg').innerHTML = _ed.map((v, i) => `<div class="cell ${(i===_ai)?'active':''} ${al.includes(i)?'empty-alert':''} ${(i===12)?'locked':''}" onclick="${(i===12)?'':'_ai='+i+';_ue()'}">${(i===12)?'★':(v||'')}</div>`).join('');
@@ -177,7 +175,14 @@
         }).join('');
         b.style.display = bh ? 'block' : 'none'; b.innerHTML = bh;
     }
-    function _ms(v) { document.getElementById('cb').style.display = (v === 'custom') ? 'inline-block' : 'none'; if (v === 'custom') _ocm(); else { _ab.clear(); _r(); _sd(); } }
+    
+    // 修正：只有在非初始化、且手動切換到自訂玩法時才彈窗
+    function _ms(v) { 
+        document.getElementById('cb').style.display = (v === 'custom') ? 'inline-block' : 'none'; 
+        if (v === 'custom' && !_f) _ocm(); 
+        else { _ab.clear(); _r(); _sd(); } 
+    }
+
     function _mi(i) { const n = parseInt(i.value); if (i.value.length >= 2) { if (n >= 1 && n <= 75 && !_d.includes(n)) { _d.push(n); _uh(); _r(); _sd(); } i.value = ''; } }
     function _uh() { const h = document.getElementById('dh'); h.innerHTML = _d.map((n, i) => `<button class="drawn-btn" onclick="_rdn(${i})">${n}</button>`).join(''); h.scrollLeft = h.scrollWidth; }
     function _rdn(i) { if (confirm(`確定刪除號碼 [ ${_d[i]} ] 嗎？`)) { _d.splice(i, 1); _ab.clear(); _uh(); _r(); _sd(); } }
@@ -185,20 +190,19 @@
     function _tt(i) { _t[i].enabled = !_t[i].enabled; _r(); _sd(); }
     function _ta(v) { _t.forEach(t => t.enabled = v); _r(); _sd(); }
     function _jp(i) { document.getElementById('tk-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    
-    // 修正存檔：加入聲音狀態 s
     function _sd() { localStorage.setItem('bingo_p_v1', JSON.stringify({t:_t, d:_d, m:document.getElementById('gm').value, p:_p, c:_tc, s:_is})); }
     
-    // 修正讀取：還原聲音狀態
     function _l() { 
+        _f = true; // 進入讀檔模式
         const s = localStorage.getItem('bingo_p_v1'); 
         if (s) { 
             const d = JSON.parse(s); 
             _t = d.t || []; _d = d.d || []; _p = d.p || [12]; _tc = d.c || 1; 
-            _is = d.s !== undefined ? d.s : true; // 如果沒有存過，預設為 true
+            _is = d.s !== undefined ? d.s : true;
             document.getElementById('gm').value = d.m || 'any_line'; 
             _up(); _ms(document.getElementById('gm').value); _uh(); _r(); 
         } 
+        _f = false; // 讀檔結束，恢復正常操作
     }
 
     function _tv() {
