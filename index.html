@@ -7,53 +7,41 @@
     <style>
         :root { --primary: #d32f2f; --secondary: #ff9800; --accent: #ffeb3b; --bg: #f4f7f9; --win: #43a047; --voice: #673ab7; --gray: #607d8b; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 5px; padding-bottom: 115px; padding-top: 85px; -webkit-user-select: none; user-select: none; }
-        
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
-
         .top-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 8000; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .top-settings { display: flex; gap: 5px; padding: 8px; height: 50px; align-items: center; box-sizing: border-box; }
         .notification-bar { background: rgba(34,34,34,0.9); color: white; padding: 5px 0; text-align: center; display: none; max-height: 60px; overflow-y: auto; }
         .notif-item { display: inline-block; margin: 2px 5px; padding: 4px 10px; border-radius: 15px; font-weight: bold; font-size: 11px; cursor: pointer; }
-        
         select { flex: 1.5; height: 34px; font-size: 14px; border-radius: 4px; border: 1px solid #ddd; min-width: 80px; }
         .btn-top { height: 34px; font-size: 12px; border: none; background: #eee; border-radius: 4px; padding: 0 8px; white-space: nowrap; }
-        
         .spk-toggle { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s; color: #555; }
         .spk-toggle:active { transform: scale(0.9); }
-        .spk-toggle svg { width: 24px; height: 24px; stroke: currentColor; }
-
+        .spk-toggle svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         .container { max-width: 500px; margin: auto; }
         .ticket { background: white; border-radius: 8px; padding: 10px; margin-bottom: 12px; border: 1px solid #eee; opacity: 0.5; transition: 0.3s; scroll-margin-top: 95px; }
         .ticket.enabled { opacity: 1; border-color: #ccc; }
         .ticket.bingo { border: 2px solid var(--primary); background: #fffde7; animation: highlight 1s 2; }
         .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-        
-        /* 1. 獎券號碼字體加大 */
         .cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #eee; border-radius: 50%; font-size: 18px; font-weight: bold; }
         .cell.marked { background: var(--accent); border-color: #fbc02d; }
         .cell.active { border: 2px solid #2196f3 !important; background: #e3f2fd; }
         .cell.empty-alert { border: 2px solid #ff5252 !important; background: #ffebee !important; }
         .cell.locked { opacity: 0.5; background: #f0f0f0; border: 1px dashed #ccc; }
-        
         .floating-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #eee; padding: 10px; box-sizing: border-box; z-index: 9000; }
         .row-1 { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         #ni { width: 65px; height: 40px; font-size: 18px; text-align: center; border: 2px solid var(--secondary); border-radius: 8px; outline: none; flex-shrink: 0; }
         .history-box { flex: 1; height: 40px; display: flex; align-items: center; gap: 5px; overflow-x: auto; background: #f5f5f5; border-radius: 8px; padding: 0 8px; }
         .drawn-btn { background: white; border: 1px solid #ccc; border-radius: 4px; padding: 4px 10px; font-size: 13px; font-weight: bold; flex-shrink: 0; }
-        
-        /* 1. 下排按鍵字體加大 */
         .row-2 { display: flex; gap: 8px; }
         .icon-btn { flex: 1; height: 48px; border: none; border-radius: 8px; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
         .btn-voice { background: var(--voice); }
         .btn-voice.active { background: #f44336; animation: blink 1.5s infinite; }
-        
         .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; overflow-y: auto; }
         .modal-content { background:white; width:95%; margin:20px auto; padding:18px; border-radius:15px; box-sizing: border-box; }
         .picker-grid { display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; max-height:220px; overflow-y:auto; background:#f0f0f0; padding:10px; border-radius:10px; }
         .num-btn { padding:12px 0; border:1px solid #ddd; background:white; border-radius:6px; font-size:14px; font-weight:bold; }
         .num-btn.disabled { background: #d0d0d0; color: #999; }
-        
         @keyframes highlight { 0%, 100% { box-shadow: 0 0 0px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary); } }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     </style>
@@ -72,8 +60,8 @@
         <button class="btn-top" onclick="_ta(true)">✅全選</button>
         <button class="btn-top" onclick="_ta(false)">❌清空</button>
         <div id="st" class="spk-toggle" onclick="_ts()">
-            <svg id="s-on" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg id="s-off" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+            <svg id="s-on" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="s-off" viewBox="0 0 24 24" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
         </div>
     </div>
     <div id="nb" class="notification-bar"></div>
@@ -122,21 +110,15 @@
 <script>
     let _t = [], _d = [], _p = [12], _tc = 1, _ed = Array(25).fill(null), _ai = 0, _iv = false, _is = true, _ei = null, _rc, _ab = new Set();
 
-    // 2. 已開獎號碼點擊刪除提示優化
-    function _rdn(i) { 
-        const num = _d[i];
-        if (confirm(`確定刪除號碼 [ ${num} ] 嗎？`)) { 
-            _d.splice(i, 1); 
-            _ab.clear(); 
-            _uh(); 
-            _r(); 
-            _sd(); 
-        } 
-    }
-
-    /* 其餘邏輯保持不變 */
     function _sb() { if (!_is || !window.speechSynthesis) return; const m = new SpeechSynthesisUtterance("Bingo!!"); m.lang = 'en-US'; m.rate = 1.2; m.pitch = 1.6; window.speechSynthesis.speak(m); }
-    function _ts() { _is = !_is; document.getElementById('s-on').style.display = _is ? 'block' : 'none'; document.getElementById('s-off').style.display = _is ? 'none' : 'block'; }
+    
+    // 修正：狀態持久化圖示與存檔
+    function _up() {
+        document.getElementById('s-on').style.display = _is ? 'block' : 'none';
+        document.getElementById('s-off').style.display = _is ? 'none' : 'block';
+    }
+    function _ts() { _is = !_is; _up(); _sd(); }
+
     function _oam() { _ei = null; _ed = Array(25).fill(null); _ed[12] = "FREE"; _ai = 0; document.getElementById('nn').value = ""; document.getElementById('err').innerText = ""; document.getElementById('db').style.display = 'none'; _ue(); document.getElementById('am').style.display = 'block'; }
     function _ue(al = []) {
         document.getElementById('eg').innerHTML = _ed.map((v, i) => `<div class="cell ${(i===_ai)?'active':''} ${al.includes(i)?'empty-alert':''} ${(i===12)?'locked':''}" onclick="${(i===12)?'':'_ai='+i+';_ue()'}">${(i===12)?'★':(v||'')}</div>`).join('');
@@ -198,12 +180,27 @@
     function _ms(v) { document.getElementById('cb').style.display = (v === 'custom') ? 'inline-block' : 'none'; if (v === 'custom') _ocm(); else { _ab.clear(); _r(); _sd(); } }
     function _mi(i) { const n = parseInt(i.value); if (i.value.length >= 2) { if (n >= 1 && n <= 75 && !_d.includes(n)) { _d.push(n); _uh(); _r(); _sd(); } i.value = ''; } }
     function _uh() { const h = document.getElementById('dh'); h.innerHTML = _d.map((n, i) => `<button class="drawn-btn" onclick="_rdn(${i})">${n}</button>`).join(''); h.scrollLeft = h.scrollWidth; }
+    function _rdn(i) { if (confirm(`確定刪除號碼 [ ${_d[i]} ] 嗎？`)) { _d.splice(i, 1); _ab.clear(); _uh(); _r(); _sd(); } }
     function _rd() { if (confirm("重新開局？")) { _d = []; _ab.clear(); _uh(); _r(); _sd(); } }
     function _tt(i) { _t[i].enabled = !_t[i].enabled; _r(); _sd(); }
     function _ta(v) { _t.forEach(t => t.enabled = v); _r(); _sd(); }
     function _jp(i) { document.getElementById('tk-' + i)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    function _sd() { localStorage.setItem('bingo_p_v1', JSON.stringify({t:_t, d:_d, m:document.getElementById('gm').value, p:_p, c:_tc})); }
-    function _l() { const s = localStorage.getItem('bingo_p_v1'); if (s) { const d = JSON.parse(s); _t = d.t || []; _d = d.d || []; _p = d.p || [12]; _tc = d.c || 1; document.getElementById('gm').value = d.m || 'any_line'; _ms(document.getElementById('gm').value); _uh(); _r(); } }
+    
+    // 修正存檔：加入聲音狀態 s
+    function _sd() { localStorage.setItem('bingo_p_v1', JSON.stringify({t:_t, d:_d, m:document.getElementById('gm').value, p:_p, c:_tc, s:_is})); }
+    
+    // 修正讀取：還原聲音狀態
+    function _l() { 
+        const s = localStorage.getItem('bingo_p_v1'); 
+        if (s) { 
+            const d = JSON.parse(s); 
+            _t = d.t || []; _d = d.d || []; _p = d.p || [12]; _tc = d.c || 1; 
+            _is = d.s !== undefined ? d.s : true; // 如果沒有存過，預設為 true
+            document.getElementById('gm').value = d.m || 'any_line'; 
+            _up(); _ms(document.getElementById('gm').value); _uh(); _r(); 
+        } 
+    }
+
     function _tv() {
         if(!_rc) return alert("不支援語音");
         if (!_iv) { _iv = true; try { _rc.start(); document.getElementById('vb').classList.add('active'); } catch(e) { _rc.stop(); setTimeout(() => { if(_iv) _rc.start(); }, 400); } } 
